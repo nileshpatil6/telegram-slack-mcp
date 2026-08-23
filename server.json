@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.nileshpatil6/telegram-slack-mcp",
-  "description": "Connect Claude to your personal Telegram and Slack accounts: real DMs, groups and channels via MTProto, plus multi-workspace Slack, with reading enabled by default and sending gated behind an explicit opt-in.",
+  "description": "Read and reply to your personal Telegram chats and all your Slack workspaces.",
   "repository": {
     "url": "https://github.com/nileshpatil6/telegram-slack-mcp",
     "source": "github"
   },
-  "version": "0.2.1",
+  "version": "0.2.2",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "telegram-slack-mcp",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "transport": {
         "type": "stdio"
       },
@@ -77,7 +77,7 @@
     {
       "registryType": "pypi",
       "identifier": "telegram-slack-mcp",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "transport": {
         "type": "stdio"
       }

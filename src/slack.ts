@@ -143,7 +143,7 @@ const WORKSPACE_ARG = z
   .describe("Substring of a workspace name. Blank acts across all connected workspaces.");
 
 export function buildSlackServer(): McpServer {
-  const server = new McpServer({ name: "telegram-slack-mcp:slack", version: "0.2.1" });
+  const server = new McpServer({ name: "telegram-slack-mcp:slack", version: "0.2.2" });
 
   server.registerTool(
     "whoami",

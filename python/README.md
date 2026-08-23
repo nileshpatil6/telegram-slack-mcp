@@ -1,5 +1,7 @@
 # telegram-slack-mcp
 
+mcp-name: io.github.nileshpatil6/telegram-slack-mcp
+
 MCP servers that give Claude access to your **personal** Telegram and Slack accounts.
 Python distribution of [telegram-slack-mcp](https://github.com/nileshpatil6/telegram-slack-mcp).
 
