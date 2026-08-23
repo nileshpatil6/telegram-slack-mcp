@@ -1,6 +1,6 @@
 {
   "name": "telegram-slack-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP servers that give Claude access to your personal Telegram and Slack accounts",
   "main": "dist/cli.js",
   "scripts": {
@@ -32,7 +32,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@slack/web-api": "^8.0.0",
-    "telegram": "^2.26.22",
+    "teleproto": "^1.228.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {

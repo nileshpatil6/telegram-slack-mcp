@@ -6,13 +6,15 @@
     "url": "https://github.com/nileshpatil6/telegram-slack-mcp",
     "source": "github"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "telegram-slack-mcp",
-      "version": "0.2.0",
-      "transport": { "type": "stdio" },
+      "version": "0.2.1",
+      "transport": {
+        "type": "stdio"
+      },
       "runtimeArguments": [
         {
           "type": "positional",
@@ -21,7 +23,10 @@
           "isRequired": true,
           "format": "string",
           "value": "telegram",
-          "choices": ["telegram", "slack"]
+          "choices": [
+            "telegram",
+            "slack"
+          ]
         }
       ],
       "environmentVariables": [
@@ -72,8 +77,10 @@
     {
       "registryType": "pypi",
       "identifier": "telegram-slack-mcp",
-      "version": "0.2.0",
-      "transport": { "type": "stdio" }
+      "version": "0.2.1",
+      "transport": {
+        "type": "stdio"
+      }
     }
   ]
 }

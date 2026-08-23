@@ -1,9 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { TelegramClient, Api } from "telegram";
-import { StringSession } from "telegram/sessions";
-import { computeCheck } from "telegram/Password";
+import { TelegramClient, Api } from "teleproto";
+import { StringSession } from "teleproto/sessions";
+import { computeCheck } from "teleproto/Password";
 import { env, flag, ok, fail, readState, writeState } from "./common.js";
 
 const SESSION_FILE = "telegram.session";
@@ -105,7 +105,7 @@ async function resolve(c: TelegramClient, chat: string): Promise<any> {
 }
 
 export function buildTelegramServer(): McpServer {
-  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.2.0" });
+  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.2.1" });
 
   server.registerTool(
     "login_start",
