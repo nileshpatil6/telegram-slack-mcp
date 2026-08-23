@@ -9,8 +9,8 @@ from slack_sdk.errors import SlackApiError
 
 ROOT = Path(__file__).parent
 # CLAUDE_PLUGIN_DATA keeps credentials across plugin updates when installed as a plugin.
-_d = os.getenv("CLAUDE_PLUGIN_DATA")
-DATA = Path(_d) if _d else ROOT
+_d = os.getenv("CHAT_MCP_DATA_DIR") or os.getenv("CLAUDE_PLUGIN_DATA")
+DATA = Path(_d) if _d else Path.home() / ".chat-mcp"
 DATA.mkdir(parents=True, exist_ok=True)
 # Existing environment variables win; .env files are only a fallback.
 load_dotenv(DATA / ".env")
@@ -263,5 +263,10 @@ def send_message(channel: str, text: str, workspace: str = "", thread_ts: str = 
     return {"sent": True, "workspace": ws, "channel": channel, "ts": r["ts"]}
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Console-script entrypoint: run the Slack MCP server on stdio."""
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()

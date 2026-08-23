@@ -1,0 +1,65 @@
+# chat-mcp-servers
+
+MCP servers that give Claude access to your **personal** Telegram and Slack accounts.
+Python distribution of [chat-mcp](https://github.com/nileshpatil6/chat-mcp).
+
+There is also an npm build of the same servers if you prefer Node:
+`npx -y chat-mcp telegram`.
+
+## Install
+
+```bash
+uvx --from chat-mcp-servers chat-mcp-telegram   # or: pipx install chat-mcp-servers
+```
+
+Register with Claude Code:
+
+```bash
+claude mcp add telegram -- uvx --from chat-mcp-servers chat-mcp-telegram
+claude mcp add slack    -- uvx --from chat-mcp-servers chat-mcp-slack
+```
+
+## Telegram
+
+Uses MTProto as **your account**, so it sees your real DMs, groups and channels,
+not just messages sent to a bot.
+
+1. Get an `api_id` and `api_hash` from <https://my.telegram.org> → API development tools.
+2. Set `TELEGRAM_API_ID` and `TELEGRAM_API_HASH`.
+3. Ask Claude to log you in: it calls `login_start` with your phone, you paste the
+   code Telegram sends, it calls `login_complete`. One time only.
+
+Tools: `login_start`, `login_complete`, `whoami`, `list_chats`, `read_chat`,
+`search_messages`, `unread_summary`, `send_message`.
+
+## Slack
+
+Reads and posts across **all** your workspaces at once.
+
+1. Create an app at <https://api.slack.com/apps> from the manifest in the repo.
+2. Install it to each workspace, copying the User OAuth Token (`xoxp-...`) each time.
+3. Set `SLACK_USER_TOKENS` to all of them, comma separated.
+
+Tools: `whoami`, `list_channels`, `list_dms`, `read_channel`, `read_thread`,
+`search_messages`, `unread_summary`, `send_message`. Every tool takes an optional
+`workspace` filter.
+
+## Environment
+
+| variable | meaning |
+|---|---|
+| `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` | from my.telegram.org |
+| `TELEGRAM_ALLOW_SEND` | `1` to allow sending as you (default off) |
+| `SLACK_USER_TOKENS` | one `xoxp-` token per workspace, comma separated |
+| `SLACK_ALLOW_SEND` | `1` to allow posting as you (default off) |
+| `CHAT_MCP_DATA_DIR` | where sessions live (default `~/.chat-mcp`) |
+
+## Security
+
+These act as **you**, not as a bot. Sending is off by default in both servers.
+The Telegram session file and Slack `xoxp-` tokens are full account credentials —
+keep them out of git. Automating a personal Telegram account is a userbot, which
+Telegram's ToS restricts; light personal use is common, bulk automation risks a ban.
+Anything Claude reads enters the model's context.
+
+MIT licensed. Full docs: <https://github.com/nileshpatil6/chat-mcp>

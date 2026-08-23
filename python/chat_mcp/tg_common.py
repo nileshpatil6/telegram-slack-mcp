@@ -1,3 +1,4 @@
+"""Shared Telegram configuration: credentials, data directory, client factory."""
 import os
 from pathlib import Path
 
@@ -6,13 +7,13 @@ from telethon import TelegramClient
 
 
 def data_dir() -> Path:
-    """Where the session file and .env live.
+    """Where the session file lives.
 
-    Uses CLAUDE_PLUGIN_DATA when running as a Claude Code plugin, so credentials
-    survive plugin updates. Falls back to this file's own directory.
+    CHAT_MCP_DATA_DIR wins, then CLAUDE_PLUGIN_DATA (so a Claude Code plugin
+    install keeps its login across updates), then ~/.chat-mcp.
     """
-    d = os.getenv("CLAUDE_PLUGIN_DATA")
-    p = Path(d) if d else Path(__file__).parent
+    d = os.getenv("CHAT_MCP_DATA_DIR") or os.getenv("CLAUDE_PLUGIN_DATA")
+    p = Path(d) if d else Path.home() / ".chat-mcp"
     p.mkdir(parents=True, exist_ok=True)
     return p
 
@@ -20,24 +21,33 @@ def data_dir() -> Path:
 DATA = data_dir()
 # Existing environment variables win; .env is only a fallback.
 load_dotenv(DATA / ".env")
-load_dotenv(Path(__file__).parent / ".env")
+load_dotenv(Path.cwd() / ".env")
 
-_api_id = os.getenv("TG_API_ID", "").strip()
+
+def _env(*names: str, default: str = "") -> str:
+    for n in names:
+        v = os.getenv(n, "").strip()
+        if v:
+            return v
+    return default
+
+
+_api_id = _env("TELEGRAM_API_ID", "TG_API_ID")
 API_ID = int(_api_id) if _api_id.isdigit() else 0
-API_HASH = os.getenv("TG_API_HASH", "").strip()
-SESSION = str(DATA / os.getenv("TG_SESSION", "tg"))
-ALLOW_SEND = os.getenv("TG_ALLOW_SEND", "0") == "1"
+API_HASH = _env("TELEGRAM_API_HASH", "TG_API_HASH")
+SESSION = str(DATA / _env("TELEGRAM_SESSION", "TG_SESSION", default="telegram"))
+ALLOW_SEND = _env("TELEGRAM_ALLOW_SEND", "TG_ALLOW_SEND").lower() in ("1", "true", "yes", "on")
 
 SETUP_HINT = (
-    "Missing Telegram API credentials. Get an api_id and api_hash from "
-    "https://my.telegram.org (API development tools), then set TG_API_ID and "
-    "TG_API_HASH as environment variables, or put them in a .env file at: "
+    "Missing Telegram credentials. Get an api_id and api_hash from "
+    "https://my.telegram.org (API development tools), then set TELEGRAM_API_ID "
+    "and TELEGRAM_API_HASH."
 )
 
 
 def check_config() -> None:
     if not API_ID or not API_HASH:
-        raise RuntimeError(SETUP_HINT + str(DATA / ".env"))
+        raise RuntimeError(SETUP_HINT)
 
 
 def make_client() -> TelegramClient:

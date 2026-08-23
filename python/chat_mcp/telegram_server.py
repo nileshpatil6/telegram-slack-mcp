@@ -7,7 +7,7 @@ from mcp.server import MCPServer
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import User, Chat, Channel
 
-from tg_common import make_client, ALLOW_SEND
+from .tg_common import make_client, ALLOW_SEND
 
 mcp = MCPServer("telegram-reader")
 
@@ -237,5 +237,10 @@ async def login_complete(code: str, password: str = "") -> dict:
             "note": "Session saved to tg.session. This login is permanent, no need to repeat."}
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Console-script entrypoint: run the Telegram MCP server on stdio."""
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()

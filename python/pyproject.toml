@@ -1,0 +1,38 @@
+[project]
+name = "chat-mcp-servers"
+version = "0.2.0"
+description = "MCP servers that give Claude access to your personal Telegram and Slack accounts"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "nileshpatil6" }]
+keywords = ["mcp", "model-context-protocol", "claude", "telegram", "slack", "chat"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Communications :: Chat",
+]
+dependencies = [
+  "mcp>=2.0",
+  "telethon>=1.44",
+  "slack_sdk>=3.43",
+  "python-dotenv>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/nileshpatil6/chat-mcp"
+Repository = "https://github.com/nileshpatil6/chat-mcp"
+Issues = "https://github.com/nileshpatil6/chat-mcp/issues"
+
+[project.scripts]
+chat-mcp-telegram = "chat_mcp.telegram_server:main"
+chat-mcp-slack = "chat_mcp.slack_server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["chat_mcp"]
