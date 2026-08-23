@@ -1,3 +1,0 @@
-slack_sdk>=3.43
-mcp>=2.0
-python-dotenv>=1.0

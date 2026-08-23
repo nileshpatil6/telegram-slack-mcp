@@ -1,0 +1,54 @@
+{
+  "name": "chat-mcp",
+  "version": "0.2.0",
+  "description": "MCP servers that give Claude access to your personal Telegram and Slack accounts",
+  "main": "dist/cli.js",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "tsc",
+    "start": "node dist/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nileshpatil6/chat-mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "claude-code",
+    "telegram",
+    "slack",
+    "chat",
+    "messaging",
+    "mcp-server"
+  ],
+  "author": "nileshpatil6",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nileshpatil6/chat-mcp/issues"
+  },
+  "homepage": "https://github.com/nileshpatil6/chat-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@slack/web-api": "^8.0.0",
+    "telegram": "^2.26.22",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
+  },
+  "bin": {
+    "chat-mcp": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "slack-app-manifest.yaml"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

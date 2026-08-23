@@ -1,6 +1,10 @@
+node_modules/
+dist/
 .venv/
 .env
 *.session
 *.session-journal
 __pycache__/
 *.pyc
+*.egg-info/
+build/
