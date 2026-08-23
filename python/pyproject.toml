@@ -1,5 +1,5 @@
 [project]
-name = "chat-mcp-servers"
+name = "telegram-slack-mcp"
 version = "0.2.0"
 description = "MCP servers that give Claude access to your personal Telegram and Slack accounts"
 readme = "README.md"
@@ -22,13 +22,12 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nileshpatil6/chat-mcp"
-Repository = "https://github.com/nileshpatil6/chat-mcp"
-Issues = "https://github.com/nileshpatil6/chat-mcp/issues"
+Homepage = "https://github.com/nileshpatil6/telegram-slack-mcp"
+Repository = "https://github.com/nileshpatil6/telegram-slack-mcp"
+Issues = "https://github.com/nileshpatil6/telegram-slack-mcp/issues"
 
 [project.scripts]
-chat-mcp-telegram = "chat_mcp.telegram_server:main"
-chat-mcp-slack = "chat_mcp.slack_server:main"
+telegram-slack-mcp = "chat_mcp.cli:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -105,7 +105,7 @@ async function resolve(c: TelegramClient, chat: string): Promise<any> {
 }
 
 export function buildTelegramServer(): McpServer {
-  const server = new McpServer({ name: "chat-mcp-telegram", version: "0.2.0" });
+  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.2.0" });
 
   server.registerTool(
     "login_start",

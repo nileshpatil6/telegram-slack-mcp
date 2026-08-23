@@ -1,21 +1,21 @@
 <div align="center">
 
-# chat-mcp
+# telegram-slack-mcp
 
 **Give Claude your actual chats.**
 
 Two MCP servers that connect Claude to your *personal* Telegram and Slack accounts —
 your real DMs, groups, and channels, not a bot inbox.
 
-[![npm](https://img.shields.io/npm/v/chat-mcp?color=cb3837&logo=npm)](https://www.npmjs.com/package/chat-mcp)
-[![PyPI](https://img.shields.io/pypi/v/chat-mcp-servers?color=3775a9&logo=pypi&logoColor=white)](https://pypi.org/project/chat-mcp-servers/)
+[![npm](https://img.shields.io/npm/v/telegram-slack-mcp?color=cb3837&logo=npm)](https://www.npmjs.com/package/telegram-slack-mcp)
+[![PyPI](https://img.shields.io/pypi/v/telegram-slack-mcp?color=3775a9&logo=pypi&logoColor=white)](https://pypi.org/project/telegram-slack-mcp/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 </div>
 
 ```bash
-claude mcp add telegram -- npx -y chat-mcp telegram
-claude mcp add slack    -- npx -y chat-mcp slack
+claude mcp add telegram -- npx -y telegram-slack-mcp telegram
+claude mcp add slack    -- npx -y telegram-slack-mcp slack
 ```
 
 Then just talk:
@@ -29,11 +29,11 @@ Then just talk:
 ## Why this exists
 
 Most Telegram integrations use the **Bot API**, which only sees messages sent *to a bot
-you created*. It cannot read your existing conversations. `chat-mcp` uses **MTProto**,
+you created*. It cannot read your existing conversations. `telegram-slack-mcp` uses **MTProto**,
 the same protocol the official app uses, authenticating as you — so Claude sees the
 chats you actually have.
 
-For Slack, the usual connector is scoped to one workspace. `chat-mcp` takes one user
+For Slack, the usual connector is scoped to one workspace. `telegram-slack-mcp` takes one user
 token per workspace and treats them as a single surface, so "search everywhere" means
 everywhere.
 
@@ -44,23 +44,23 @@ Pick whichever runtime you already have. Both ship the same tools.
 ### Node
 
 ```bash
-claude mcp add telegram -- npx -y chat-mcp telegram
-claude mcp add slack    -- npx -y chat-mcp slack
+claude mcp add telegram -- npx -y telegram-slack-mcp telegram
+claude mcp add slack    -- npx -y telegram-slack-mcp slack
 ```
 
 ### Python
 
 ```bash
-claude mcp add telegram -- uvx --from chat-mcp-servers chat-mcp-telegram
-claude mcp add slack    -- uvx --from chat-mcp-servers chat-mcp-slack
+claude mcp add telegram -- uvx telegram-slack-mcp telegram
+claude mcp add slack    -- uvx telegram-slack-mcp slack
 ```
 
 ### Claude Code plugin
 
 ```
-/plugin marketplace add nileshpatil6/chat-mcp
-/plugin install telegram@chat-mcp
-/plugin install slack@chat-mcp
+/plugin marketplace add nileshpatil6/telegram-slack-mcp
+/plugin install telegram@telegram-slack-mcp
+/plugin install slack@telegram-slack-mcp
 ```
 
 <details>
@@ -71,12 +71,12 @@ claude mcp add slack    -- uvx --from chat-mcp-servers chat-mcp-slack
   "mcpServers": {
     "telegram": {
       "command": "npx",
-      "args": ["-y", "chat-mcp", "telegram"],
+      "args": ["-y", "telegram-slack-mcp", "telegram"],
       "env": { "TELEGRAM_API_ID": "1234567", "TELEGRAM_API_HASH": "your_hash" }
     },
     "slack": {
       "command": "npx",
-      "args": ["-y", "chat-mcp", "slack"],
+      "args": ["-y", "telegram-slack-mcp", "slack"],
       "env": { "SLACK_USER_TOKENS": "xoxp-one,xoxp-two" }
     }
   }
@@ -96,7 +96,7 @@ claude mcp add slack    -- uvx --from chat-mcp-servers chat-mcp-slack
    claude mcp add telegram \
      -e TELEGRAM_API_ID=1234567 \
      -e TELEGRAM_API_HASH=your_hash \
-     -- npx -y chat-mcp telegram
+     -- npx -y telegram-slack-mcp telegram
    ```
 
 3. Ask Claude: **"log into telegram, my number is +91…"**
@@ -115,7 +115,7 @@ Got 2FA? Give Claude your cloud password along with the code.
 5. Set them all at once, comma separated:
 
    ```bash
-   claude mcp add slack -e SLACK_USER_TOKENS=xoxp-aaa,xoxp-bbb -- npx -y chat-mcp slack
+   claude mcp add slack -e SLACK_USER_TOKENS=xoxp-aaa,xoxp-bbb -- npx -y telegram-slack-mcp slack
    ```
 
 ## Tools
@@ -168,7 +168,7 @@ writing deliberately.
 
 **Nothing is sent to any server belonging to this project. There is no such server.**
 
-`chat-mcp` runs entirely on your machine. The only network traffic it makes is directly
+`telegram-slack-mcp` runs entirely on your machine. The only network traffic it makes is directly
 to Telegram's and Slack's own APIs, using your own credentials. There is no telemetry,
 no analytics, no crash reporting, no license check, no "phone home" — grep the source,
 there is no endpoint to find.
@@ -230,8 +230,8 @@ You need the **User** OAuth token (`xoxp-`).
 ## Development
 
 ```bash
-git clone https://github.com/nileshpatil6/chat-mcp
-cd chat-mcp
+git clone https://github.com/nileshpatil6/telegram-slack-mcp
+cd telegram-slack-mcp
 npm install && npm run build
 node dist/cli.js telegram        # run the server on stdio
 

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-const USAGE = `chat-mcp - MCP servers for your personal Telegram and Slack accounts
+const USAGE = `telegram-slack-mcp - MCP servers for your personal Telegram and Slack accounts
 
 Usage:
-  chat-mcp telegram     Run the Telegram MCP server on stdio
-  chat-mcp slack        Run the Slack MCP server on stdio
+  telegram-slack-mcp telegram   Run the Telegram MCP server on stdio
+  telegram-slack-mcp slack      Run the Slack MCP server on stdio
 
 Register with Claude Code:
-  claude mcp add telegram -- npx -y chat-mcp telegram
-  claude mcp add slack    -- npx -y chat-mcp slack
+  claude mcp add telegram -- npx -y telegram-slack-mcp telegram
+  claude mcp add slack    -- npx -y telegram-slack-mcp slack
 
 Environment:
   TELEGRAM_API_ID       api_id from https://my.telegram.org
@@ -18,7 +18,7 @@ Environment:
   SLACK_ALLOW_SEND      1 to allow posting messages as you (default off)
   CHAT_MCP_DATA_DIR     where sessions are stored (default ~/.chat-mcp)
 
-Docs: https://github.com/nileshpatil6/chat-mcp
+Docs: https://github.com/nileshpatil6/telegram-slack-mcp
 `;
 
 async function main() {
@@ -26,7 +26,7 @@ async function main() {
   switch (cmd) {
     case "telegram":
     case "tg": {
-      // Loaded lazily so `chat-mcp slack` never pays for the MTProto library.
+      // Loaded lazily so `telegram-slack-mcp slack` never pays for the MTProto library.
       const { runTelegram } = await import("./telegram.js");
       await runTelegram();
       break;
@@ -53,6 +53,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  process.stderr.write(`chat-mcp failed to start: ${e?.message ?? e}\n`);
+  process.stderr.write(`telegram-slack-mcp failed to start: ${e?.message ?? e}\n`);
   process.exit(1);
 });

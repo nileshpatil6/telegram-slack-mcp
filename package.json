@@ -1,5 +1,5 @@
 {
-  "name": "chat-mcp",
+  "name": "telegram-slack-mcp",
   "version": "0.2.0",
   "description": "MCP servers that give Claude access to your personal Telegram and Slack accounts",
   "main": "dist/cli.js",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nileshpatil6/chat-mcp.git"
+    "url": "git+https://github.com/nileshpatil6/telegram-slack-mcp.git"
   },
   "keywords": [
     "mcp",
@@ -26,9 +26,9 @@
   "author": "nileshpatil6",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nileshpatil6/chat-mcp/issues"
+    "url": "https://github.com/nileshpatil6/telegram-slack-mcp/issues"
   },
-  "homepage": "https://github.com/nileshpatil6/chat-mcp#readme",
+  "homepage": "https://github.com/nileshpatil6/telegram-slack-mcp#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@slack/web-api": "^8.0.0",
@@ -40,9 +40,7 @@
     "typescript": "^7.0.2"
   },
   "bin": {
-    "chat-mcp": "dist/cli.js",
-    "chat-mcp-telegram": "dist/bin-telegram.js",
-    "chat-mcp-slack": "dist/bin-slack.js"
+    "telegram-slack-mcp": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -53,5 +51,5 @@
   "engines": {
     "node": ">=18"
   },
-  "mcpName": "io.github.nileshpatil6/chat-mcp"
+  "mcpName": "io.github.nileshpatil6/telegram-slack-mcp"
 }

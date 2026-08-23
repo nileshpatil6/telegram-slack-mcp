@@ -12,7 +12,7 @@ const ALLOW_SEND = flag("SLACK_ALLOW_SEND");
 
 const SETUP =
   "No Slack tokens. Create an app at https://api.slack.com/apps (use the manifest in " +
-  "the chat-mcp repo), install it to each workspace, then set SLACK_USER_TOKENS to the " +
+  "the telegram-slack-mcp repo), install it to each workspace, then set SLACK_USER_TOKENS to the " +
   "User OAuth tokens (xoxp-...), comma separated.";
 
 type Workspace = { name: string; client: WebClient; user: string; userId: string; url: string };
@@ -143,7 +143,7 @@ const WORKSPACE_ARG = z
   .describe("Substring of a workspace name. Blank acts across all connected workspaces.");
 
 export function buildSlackServer(): McpServer {
-  const server = new McpServer({ name: "chat-mcp-slack", version: "0.2.0" });
+  const server = new McpServer({ name: "telegram-slack-mcp:slack", version: "0.2.0" });
 
   server.registerTool(
     "whoami",

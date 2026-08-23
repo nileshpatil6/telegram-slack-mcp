@@ -1,22 +1,22 @@
-# chat-mcp-servers
+# telegram-slack-mcp
 
 MCP servers that give Claude access to your **personal** Telegram and Slack accounts.
-Python distribution of [chat-mcp](https://github.com/nileshpatil6/chat-mcp).
+Python distribution of [telegram-slack-mcp](https://github.com/nileshpatil6/telegram-slack-mcp).
 
 There is also an npm build of the same servers if you prefer Node:
-`npx -y chat-mcp telegram`.
+`npx -y telegram-slack-mcp telegram`.
 
 ## Install
 
 ```bash
-uvx --from chat-mcp-servers chat-mcp-telegram   # or: pipx install chat-mcp-servers
+uvx telegram-slack-mcp telegram   # or: pipx install telegram-slack-mcp
 ```
 
 Register with Claude Code:
 
 ```bash
-claude mcp add telegram -- uvx --from chat-mcp-servers chat-mcp-telegram
-claude mcp add slack    -- uvx --from chat-mcp-servers chat-mcp-slack
+claude mcp add telegram -- uvx telegram-slack-mcp telegram
+claude mcp add slack    -- uvx telegram-slack-mcp slack
 ```
 
 ## Telegram
@@ -74,4 +74,4 @@ keep them out of git. Automating a personal Telegram account is a userbot, which
 Telegram's ToS restricts; light personal use is common, bulk automation risks a ban.
 Anything Claude reads enters the model's context.
 
-MIT licensed. Full docs: <https://github.com/nileshpatil6/chat-mcp>
+MIT licensed. Full docs: <https://github.com/nileshpatil6/telegram-slack-mcp>

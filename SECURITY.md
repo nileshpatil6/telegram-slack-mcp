@@ -2,7 +2,7 @@
 
 ## What this software can do
 
-`chat-mcp` authenticates as **you** — not as a bot. With a valid session it can read
+`telegram-slack-mcp` authenticates as **you** — not as a bot. With a valid session it can read
 every conversation your account can read, and, when sending is enabled, post messages
 that are indistinguishable from ones you typed.
 
@@ -59,5 +59,5 @@ tools are annotated `readOnlyHint: true` so MCP clients can surface the differen
 
 ## Reporting a vulnerability
 
-Open an issue at <https://github.com/nileshpatil6/chat-mcp/issues>. For anything
+Open an issue at <https://github.com/nileshpatil6/telegram-slack-mcp/issues>. For anything
 sensitive, say so in the issue without details and a private channel will be arranged.

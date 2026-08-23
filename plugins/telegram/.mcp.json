@@ -2,7 +2,7 @@
   "mcpServers": {
     "telegram": {
       "command": "npx",
-      "args": ["-y", "chat-mcp", "telegram"]
+      "args": ["-y", "telegram-slack-mcp", "telegram"]
     }
   }
 }

@@ -5,12 +5,12 @@ Thanks for taking a look.
 ## Layout
 
 ```
-src/            TypeScript servers (npm package `chat-mcp`)
+src/            TypeScript servers (npm package `telegram-slack-mcp`)
   cli.ts        binary entrypoint, dispatches to a server
   telegram.ts   MTProto server via gramjs
   slack.ts      multi-workspace Slack server
   common.ts     data dir, env helpers, MCP result shapes
-python/         Python servers (PyPI package `chat-mcp-servers`)
+python/         Python servers (PyPI package `telegram-slack-mcp`)
 plugins/        Claude Code plugin wrappers, both shell out to npx
 ```
 
