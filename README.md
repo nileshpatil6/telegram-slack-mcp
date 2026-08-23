@@ -1,86 +1,214 @@
+<div align="center">
+
 # chat-mcp
 
-Two MCP servers that give Claude access to your own chat accounts, packaged as a
-Claude Code plugin marketplace.
+**Give Claude your actual chats.**
 
-| plugin | what it does |
-|---|---|
-| **telegram-reader** | Read and reply to your personal Telegram chats. Uses MTProto as *your account*, so it sees your real DMs, groups, and channels, not just messages sent to a bot. |
-| **slack-reader** | Read and post across **all** your Slack workspaces at once, one user token per workspace. |
+Two MCP servers that connect Claude to your *personal* Telegram and Slack accounts —
+your real DMs, groups, and channels, not a bot inbox.
+
+[![npm](https://img.shields.io/npm/v/chat-mcp?color=cb3837&logo=npm)](https://www.npmjs.com/package/chat-mcp)
+[![PyPI](https://img.shields.io/pypi/v/chat-mcp-servers?color=3775a9&logo=pypi&logoColor=white)](https://pypi.org/project/chat-mcp-servers/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+</div>
+
+```bash
+claude mcp add telegram -- npx -y chat-mcp telegram
+claude mcp add slack    -- npx -y chat-mcp slack
+```
+
+Then just talk:
+
+> *"what's unread on telegram from actual people?"*
+> *"read my last 30 messages with Priya and draft a reply"*
+> *"search all my slack workspaces for the deploy postmortem"*
+
+---
+
+## Why this exists
+
+Most Telegram integrations use the **Bot API**, which only sees messages sent *to a bot
+you created*. It cannot read your existing conversations. `chat-mcp` uses **MTProto**,
+the same protocol the official app uses, authenticating as you — so Claude sees the
+chats you actually have.
+
+For Slack, the usual connector is scoped to one workspace. `chat-mcp` takes one user
+token per workspace and treats them as a single surface, so "search everywhere" means
+everywhere.
 
 ## Install
 
+Pick whichever runtime you already have. Both ship the same tools.
+
+### Node
+
+```bash
+claude mcp add telegram -- npx -y chat-mcp telegram
+claude mcp add slack    -- npx -y chat-mcp slack
+```
+
+### Python
+
+```bash
+claude mcp add telegram -- uvx --from chat-mcp-servers chat-mcp-telegram
+claude mcp add slack    -- uvx --from chat-mcp-servers chat-mcp-slack
+```
+
+### Claude Code plugin
+
 ```
 /plugin marketplace add nileshpatil6/chat-mcp
-/plugin install telegram-reader@chat-mcp
-/plugin install slack-reader@chat-mcp
+/plugin install telegram@chat-mcp
+/plugin install slack@chat-mcp
 ```
 
-Both servers are Python. Install their dependencies once:
+<details>
+<summary>Other MCP clients (Claude Desktop, Cursor, …)</summary>
 
+```json
+{
+  "mcpServers": {
+    "telegram": {
+      "command": "npx",
+      "args": ["-y", "chat-mcp", "telegram"],
+      "env": { "TELEGRAM_API_ID": "1234567", "TELEGRAM_API_HASH": "your_hash" }
+    },
+    "slack": {
+      "command": "npx",
+      "args": ["-y", "chat-mcp", "slack"],
+      "env": { "SLACK_USER_TOKENS": "xoxp-one,xoxp-two" }
+    }
+  }
+}
 ```
-pip install -r ~/.claude/plugins/cache/chat-mcp/telegram-reader/requirements.txt
-pip install -r ~/.claude/plugins/cache/chat-mcp/slack-reader/requirements.txt
-```
 
-They launch with plain `python`, so that has to be a Python 3.10+ on your PATH.
+</details>
 
-## telegram-reader
+## Setup
 
-1. Get an `api_id` and `api_hash` from <https://my.telegram.org> → API development tools.
-2. Set them as environment variables `TG_API_ID` / `TG_API_HASH`, or drop them in a
-   `.env` next to the server (see `.env.example`).
-3. Ask Claude to log you in: it calls `login_start` with your phone, you paste the code
-   Telegram sends, it calls `login_complete`. One time only — the session persists.
+### Telegram — 2 minutes
 
-| tool | |
+1. Go to <https://my.telegram.org> → **API development tools** → create an app.
+2. Copy the `api_id` and `api_hash`, and set them:
+
+   ```bash
+   claude mcp add telegram \
+     -e TELEGRAM_API_ID=1234567 \
+     -e TELEGRAM_API_HASH=your_hash \
+     -- npx -y chat-mcp telegram
+   ```
+
+3. Ask Claude: **"log into telegram, my number is +91…"**
+   It calls `login_start`, Telegram texts you a code, you paste it, it calls
+   `login_complete`. That's the only time — the session is saved to
+   `~/.chat-mcp` and persists forever.
+
+Got 2FA? Give Claude your cloud password along with the code.
+
+### Slack — 5 minutes
+
+1. Go to <https://api.slack.com/apps> → **Create New App** → **From a manifest**.
+2. Paste [`slack-app-manifest.yaml`](slack-app-manifest.yaml) — it prefills every scope.
+3. **Install to Workspace**, then copy the **User OAuth Token** (`xoxp-…`, not `xoxb-`).
+4. Repeat step 3 for each workspace you want. Same app, one token each.
+5. Set them all at once, comma separated:
+
+   ```bash
+   claude mcp add slack -e SLACK_USER_TOKENS=xoxp-aaa,xoxp-bbb -- npx -y chat-mcp slack
+   ```
+
+## Tools
+
+### Telegram
+
+| tool | what it does |
 |---|---|
-| `login_start(phone)` / `login_complete(code, password)` | one-time login |
-| `whoami()` | which account is logged in |
-| `list_chats(limit, query, unread_only)` | recent chats |
-| `read_chat(chat, limit, before_id)` | messages of one chat (`chat` = @username / id / name substring) |
-| `search_messages(query, chat, limit)` | full-text search |
-| `unread_summary(limit, per_chat)` | catch-up view |
-| `send_message(chat, text)` | needs `TG_ALLOW_SEND=1` |
+| `login_start(phone)` | send yourself a login code |
+| `login_complete(code, password?)` | finish login, save the session |
+| `whoami()` | which account is connected |
+| `list_chats(limit, query, unread_only, kind)` | recent chats; `kind` filters to `dm`, `group`, `channel`, `bot`… |
+| `read_chat(chat, limit, before_id)` | messages of one chat — `chat` takes @username, id, or part of a name |
+| `search_messages(query, chat?, limit)` | full-text search, one chat or all |
+| `unread_summary(limit, per_chat, kind)` | catch-up view; `kind: "dm"` skips the channel noise |
+| `send_message(chat, text, reply_to?)` | reply as you — **off unless `TELEGRAM_ALLOW_SEND=1`** |
 
-## slack-reader
+### Slack
 
-1. Create a Slack app from `plugins/slack-reader/manifest.yaml` at
-   <https://api.slack.com/apps> → Create New App → **From a manifest**.
-2. Install it to each workspace you want, copying the **User OAuth Token** (`xoxp-...`)
-   each time.
-3. Set `SLACK_USER_TOKENS` to all of them, comma separated.
-
-| tool | |
+| tool | what it does |
 |---|---|
 | `whoami()` | every connected workspace and who you are in each |
 | `list_channels(limit, query, workspace, types)` | channels across workspaces |
-| `list_dms(limit, workspace)` | DMs and group DMs |
+| `list_dms(limit, workspace)` | 1:1 and group DMs |
 | `read_channel(channel, limit, workspace, before_ts)` | one channel or DM |
-| `read_thread(channel, thread_ts, limit, workspace)` | thread replies |
-| `search_messages(query, limit, workspace)` | supports `in:#chan` `from:@user` |
+| `read_thread(channel, thread_ts, limit, workspace)` | replies inside a thread |
+| `search_messages(query, limit, workspace)` | supports `in:#chan`, `from:@user` |
 | `unread_summary(limit, per_chat, workspace)` | what's unread everywhere |
-| `send_message(channel, text, workspace, thread_ts)` | needs `SLACK_ALLOW_SEND=1` |
+| `send_message(channel, text, workspace, thread_ts?)` | post as you — **off unless `SLACK_ALLOW_SEND=1`** |
 
-Every Slack tool takes an optional `workspace` (substring of the name). Blank acts
-across all of them; it's only required when a channel name exists in more than one.
+Every Slack tool takes an optional **`workspace`** (any substring of the name). Leave it
+blank to act across all of them; it's only required when a channel name exists in more
+than one, and the error tells you which.
+
+## Configuration
+
+| variable | default | meaning |
+|---|---|---|
+| `TELEGRAM_API_ID` | — | from my.telegram.org |
+| `TELEGRAM_API_HASH` | — | from my.telegram.org |
+| `TELEGRAM_ALLOW_SEND` | `0` | `1` lets Claude send Telegram messages as you |
+| `SLACK_USER_TOKENS` | — | one `xoxp-` token per workspace, comma separated |
+| `SLACK_ALLOW_SEND` | `0` | `1` lets Claude post to Slack as you |
+| `CHAT_MCP_DATA_DIR` | `~/.chat-mcp` | where the Telegram session is stored |
+
+Sending is **off by default** in both servers. Reading is the safe default; you opt into
+writing deliberately.
 
 ## Security
 
-Read this before installing.
+Read this part.
 
-- **These act as you, not as a bot.** Anything sent shows as sent by your account.
-- Sending is **off by default** in both servers. You opt in with `TG_ALLOW_SEND=1` /
-  `SLACK_ALLOW_SEND=1`.
-- The Telegram `tg.session` file and your Slack `xoxp-` tokens are **full account
-  credentials**. Anyone who copies them has your account. They stay on your machine;
-  keep them out of git (this repo's `.gitignore` covers `.env` and `*.session`).
-- Credentials live in `${CLAUDE_PLUGIN_DATA}` when installed as a plugin, so a plugin
-  update doesn't wipe your login.
-- Automating a personal Telegram account is a *userbot*. Telegram's ToS restricts this;
-  light personal read/reply use is common, bulk automation risks a ban. Your call.
-- Anything Claude reads from your chats enters the model's context. Don't point this at
-  accounts holding data you aren't willing to send to the model.
+- **These act as you, not as a bot.** Anything sent shows as sent by your account, and
+  people in those chats cannot tell the difference.
+- **The stored session is a full credential.** `~/.chat-mcp/telegram.session` and your
+  `xoxp-` tokens are equivalent to being logged in as you. Anyone who copies them has
+  your account. They never leave your machine, and nothing here phones home.
+- **Everything Claude reads enters the model's context.** Don't point this at accounts
+  holding data you would not send to a model.
+- **Telegram calls this a userbot.** Automating a personal account is restricted by
+  Telegram's ToS. Light personal read-and-reply use is common and low risk; bulk
+  automation gets accounts banned. Your call, your account.
+- Revoke any time: Telegram → Settings → Devices, or delete the token in Slack's app
+  settings. Deleting `~/.chat-mcp` drops the local session.
+
+## Troubleshooting
+
+**"Telegram not logged in yet"** — run the login flow: ask Claude to log in with your
+phone number. It persists after that; if it keeps reappearing, check that
+`CHAT_MCP_DATA_DIR` is writable.
+
+**"Missing Telegram credentials"** — `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` aren't
+reaching the server. With `claude mcp add`, pass them with `-e`.
+
+**Slack returns nothing at all** — you're almost certainly authorized against an empty
+or wrong workspace. Run `whoami` to see which workspaces are actually connected.
+
+**`"#general" exists in several workspaces`** — pass `workspace` to disambiguate; the
+error lists your options.
+
+**Slack search returns `not_allowed_token_type`** — the token is a bot token (`xoxb-`).
+You need the **User** OAuth token (`xoxp-`).
+
+## Development
+
+```bash
+git clone https://github.com/nileshpatil6/chat-mcp
+cd chat-mcp
+npm install && npm run build
+node dist/cli.js telegram        # run the server on stdio
+
+cd python && python -m build     # build the Python distribution
+```
 
 ## License
 
