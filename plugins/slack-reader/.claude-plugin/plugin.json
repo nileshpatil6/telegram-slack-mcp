@@ -1,0 +1,10 @@
+{
+  "name": "slack-reader",
+  "description": "Read and post across all your Slack workspaces from Claude",
+  "version": "0.1.0",
+  "author": { "name": "nileshpatil6", "url": "https://github.com/nileshpatil6" },
+  "homepage": "https://github.com/nileshpatil6/chat-mcp",
+  "repository": "https://github.com/nileshpatil6/chat-mcp",
+  "license": "MIT",
+  "keywords": ["slack", "messaging", "mcp"]
+}

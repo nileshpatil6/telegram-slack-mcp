@@ -1,0 +1,28 @@
+{
+  "name": "chat-mcp",
+  "owner": {
+    "name": "nileshpatil6",
+    "url": "https://github.com/nileshpatil6"
+  },
+  "metadata": {
+    "description": "MCP servers that give Claude access to your personal chat accounts"
+  },
+  "plugins": [
+    {
+      "name": "telegram-reader",
+      "source": "./plugins/telegram-reader",
+      "description": "Read and reply to your personal Telegram chats (MTProto user account, not a bot)",
+      "category": "messaging",
+      "keywords": ["telegram", "mcp", "chat", "messaging", "telethon"],
+      "license": "MIT"
+    },
+    {
+      "name": "slack-reader",
+      "source": "./plugins/slack-reader",
+      "description": "Read and post across all your Slack workspaces with one user token each",
+      "category": "messaging",
+      "keywords": ["slack", "mcp", "chat", "messaging", "workspace"],
+      "license": "MIT"
+    }
+  ]
+}

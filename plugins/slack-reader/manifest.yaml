@@ -1,0 +1,22 @@
+display_information:
+  name: Claude Reader
+  description: Personal MCP access to my Slack
+  background_color: "#2b2d31"
+oauth_config:
+  scopes:
+    user:
+      - channels:history
+      - channels:read
+      - groups:history
+      - groups:read
+      - im:history
+      - im:read
+      - mpim:history
+      - mpim:read
+      - users:read
+      - search:read
+      - chat:write
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

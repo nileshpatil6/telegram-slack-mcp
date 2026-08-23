@@ -1,0 +1,10 @@
+{
+  "name": "telegram-reader",
+  "description": "Read and reply to your personal Telegram chats from Claude",
+  "version": "0.1.0",
+  "author": { "name": "nileshpatil6", "url": "https://github.com/nileshpatil6" },
+  "homepage": "https://github.com/nileshpatil6/chat-mcp",
+  "repository": "https://github.com/nileshpatil6/chat-mcp",
+  "license": "MIT",
+  "keywords": ["telegram", "messaging", "mcp"]
+}
