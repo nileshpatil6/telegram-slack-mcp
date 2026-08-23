@@ -1,0 +1,79 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.nileshpatil6/chat-mcp",
+  "description": "Connect Claude to your personal Telegram and Slack accounts: real DMs, groups and channels via MTProto, plus multi-workspace Slack, with reading enabled by default and sending gated behind an explicit opt-in.",
+  "repository": {
+    "url": "https://github.com/nileshpatil6/chat-mcp",
+    "source": "github"
+  },
+  "version": "0.2.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "chat-mcp",
+      "version": "0.2.0",
+      "transport": { "type": "stdio" },
+      "runtimeArguments": [
+        {
+          "type": "positional",
+          "name": "server",
+          "description": "Which server to run: 'telegram' or 'slack'",
+          "isRequired": true,
+          "format": "string",
+          "value": "telegram",
+          "choices": ["telegram", "slack"]
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "TELEGRAM_API_ID",
+          "description": "api_id from https://my.telegram.org (Telegram server only)",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "TELEGRAM_API_HASH",
+          "description": "api_hash from https://my.telegram.org (Telegram server only)",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "TELEGRAM_ALLOW_SEND",
+          "description": "Set to 1 to allow sending Telegram messages as you. Off by default.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "SLACK_USER_TOKENS",
+          "description": "One Slack user token (xoxp-) per workspace, comma separated (Slack server only)",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "SLACK_ALLOW_SEND",
+          "description": "Set to 1 to allow posting to Slack as you. Off by default.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "CHAT_MCP_DATA_DIR",
+          "description": "Where the Telegram session is stored. Defaults to ~/.chat-mcp",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        }
+      ]
+    },
+    {
+      "registryType": "pypi",
+      "identifier": "chat-mcp-servers",
+      "version": "0.2.0",
+      "transport": { "type": "stdio" }
+    }
+  ]
+}

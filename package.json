@@ -40,7 +40,9 @@
     "typescript": "^7.0.2"
   },
   "bin": {
-    "chat-mcp": "dist/cli.js"
+    "chat-mcp": "dist/cli.js",
+    "chat-mcp-telegram": "dist/bin-telegram.js",
+    "chat-mcp-slack": "dist/bin-slack.js"
   },
   "files": [
     "dist",
@@ -50,5 +52,6 @@
   ],
   "engines": {
     "node": ">=18"
-  }
+  },
+  "mcpName": "io.github.nileshpatil6/chat-mcp"
 }
