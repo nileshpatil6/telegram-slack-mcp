@@ -6,6 +6,20 @@
 every conversation your account can read, and, when sending is enabled, post messages
 that are indistinguishable from ones you typed.
 
+## Privacy boundary
+
+This project has **no server**. Nothing is collected, transmitted, or shared with the
+author or any third party. The only outbound connections are to Telegram's and Slack's
+official APIs, authenticated with your own credentials.
+
+- **Credentials stay local.** The Telegram session and Slack tokens never leave your
+  machine and are never sent to Claude.
+- **Chat content goes only where you ask.** When Claude calls a read tool, the returned
+  messages enter your Claude conversation, governed by Anthropic's privacy policy — the
+  same as pasting text yourself. The servers are passive; they read nothing unless a
+  tool is called.
+- **No background activity.** No polling, no sync, no daemon.
+
 ## Where credentials live
 
 | what | where |

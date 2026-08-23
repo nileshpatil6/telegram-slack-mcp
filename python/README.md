@@ -54,6 +54,18 @@ Tools: `whoami`, `list_channels`, `list_dms`, `read_channel`, `read_thread`,
 | `SLACK_ALLOW_SEND` | `1` to allow posting as you (default off) |
 | `CHAT_MCP_DATA_DIR` | where sessions live (default `~/.chat-mcp`) |
 
+## Privacy
+
+**Nothing is sent to any server belonging to this project. There is no such server.**
+
+Everything runs on your machine. The only outbound traffic is to Telegram's and Slack's
+own APIs with your own credentials. No telemetry, no analytics, no phone-home.
+
+Credentials never reach Claude — they stay in `~/.chat-mcp` and your environment. What
+reaches Claude is only the chat content you ask it to read, handled under Anthropic's
+privacy policy like any text you paste in yourself. The servers are passive and read
+nothing in the background.
+
 ## Security
 
 These act as **you**, not as a bot. Sending is off by default in both servers.

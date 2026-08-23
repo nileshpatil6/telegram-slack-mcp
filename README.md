@@ -164,6 +164,34 @@ than one, and the error tells you which.
 Sending is **off by default** in both servers. Reading is the safe default; you opt into
 writing deliberately.
 
+## Privacy
+
+**Nothing is sent to any server belonging to this project. There is no such server.**
+
+`chat-mcp` runs entirely on your machine. The only network traffic it makes is directly
+to Telegram's and Slack's own APIs, using your own credentials. There is no telemetry,
+no analytics, no crash reporting, no license check, no "phone home" — grep the source,
+there is no endpoint to find.
+
+The data path is exactly this:
+
+```
+your machine  <-->  Telegram / Slack APIs      (your credentials, your account)
+your machine  <-->  Claude                     (only what you ask Claude to read)
+```
+
+Your credentials never reach Claude. Your session file and `xoxp-` tokens stay in
+`~/.chat-mcp` and in your environment; the servers use them locally to make API calls
+and pass back only the messages themselves.
+
+What *does* reach Claude is the chat content you ask about — because that is the point
+of the tool. If you ask Claude to read a conversation, that conversation goes into your
+Claude conversation and is handled under Anthropic's privacy policy, exactly like text
+you paste in yourself. Nothing else is read, and nothing is read in the background: the
+servers only act when Claude calls a tool.
+
+The author of this project cannot see any of it.
+
 ## Security
 
 Read this part.
