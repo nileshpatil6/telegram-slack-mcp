@@ -93,18 +93,26 @@ claude mcp add slack    -- uvx telegram-slack-mcp slack
 2. Copy the `api_id` and `api_hash`, and set them:
 
    ```bash
-   claude mcp add telegram \
-     -e TELEGRAM_API_ID=1234567 \
-     -e TELEGRAM_API_HASH=your_hash \
-     -- npx -y telegram-slack-mcp telegram
+   claude mcp add telegram      -e TELEGRAM_API_ID=1234567      -e TELEGRAM_API_HASH=your_hash      -- npx -y telegram-slack-mcp telegram
    ```
 
-3. Ask Claude: **"log into telegram, my number is +91…"**
-   It calls `login_start`, Telegram texts you a code, you paste it, it calls
-   `login_complete`. That's the only time — the session is saved to
-   `~/.chat-mcp` and persists forever.
+3. Ask Claude: **"log into telegram"**
 
-Got 2FA? Give Claude your cloud password along with the code.
+   It calls `login`, which opens a page with a QR code. Scan it from Telegram on your
+   phone — **Settings → Devices → Link Desktop Device** — and you're in. No phone number,
+   no SMS code, no 2FA password typed anywhere. On the same machine you can click
+   "open in Telegram Desktop" instead of scanning.
+
+   The session is saved to `~/.chat-mcp` and persists; you do this once.
+
+<details>
+<summary>Can't scan? Use the phone-number flow</summary>
+
+`login_start(phone)` sends you a code, `login_complete(code, password?)` finishes.
+Note that with this path your phone number and login code pass through the conversation
+as tool arguments, so they land in the model's context. The QR flow keeps them out of it.
+
+</details>
 
 ### Slack — 5 minutes
 
@@ -112,11 +120,19 @@ Got 2FA? Give Claude your cloud password along with the code.
 2. Paste [`slack-app-manifest.yaml`](slack-app-manifest.yaml) — it prefills every scope.
 3. **Install to Workspace**, then copy the **User OAuth Token** (`xoxp-…`, not `xoxb-`).
 4. Repeat step 3 for each workspace you want. Same app, one token each.
-5. Set them all at once, comma separated:
+5. Ask Claude: **"connect my slack"** — the `login` tool prompts for the tokens, verifies
+   each one against Slack, and saves them to `~/.chat-mcp`. Nothing to put in your config.
+
+   Prefer environment variables? That still works:
 
    ```bash
    claude mcp add slack -e SLACK_USER_TOKENS=xoxp-aaa,xoxp-bbb -- npx -y telegram-slack-mcp slack
    ```
+
+Slack has no local OAuth flow, which is why you create the app yourself: Slack's OAuth
+requires a client secret and an HTTPS redirect URL, so a package distributed over npm
+cannot complete it without either shipping a secret publicly or running a callback
+server. This project has no server, so it asks for the token instead.
 
 ## Tools
 
@@ -124,7 +140,8 @@ Got 2FA? Give Claude your cloud password along with the code.
 
 | tool | what it does |
 |---|---|
-| `login_start(phone)` | send yourself a login code |
+| `login()` | **scan a QR to link your account** — no phone number or code |
+| `login_start(phone)` | fallback: send yourself a login code |
 | `login_complete(code, password?)` | finish login, save the session |
 | `whoami()` | which account is connected |
 | `list_chats(limit, query, unread_only, kind)` | recent chats; `kind` filters to `dm`, `group`, `channel`, `bot`… |
@@ -137,6 +154,7 @@ Got 2FA? Give Claude your cloud password along with the code.
 
 | tool | what it does |
 |---|---|
+| `login()` | prompts for your `xoxp-` tokens, verifies them, saves them |
 | `whoami()` | every connected workspace and who you are in each |
 | `list_channels(limit, query, workspace, types)` | channels across workspaces |
 | `list_dms(limit, workspace)` | 1:1 and group DMs |

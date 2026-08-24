@@ -2,18 +2,25 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { WebClient } from "@slack/web-api";
-import { env, flag, ok, fail } from "./common.js";
+import { env, flag, ok, fail, readState, writeState } from "./common.js";
 
-const TOKENS = (env("SLACK_USER_TOKENS") || env("SLACK_USER_TOKEN"))
-  .split(",")
-  .map((t) => t.trim())
-  .filter(Boolean);
+const TOKEN_FILE = "slack.tokens";
+
+/** Environment first, then whatever `login` saved previously. */
+function tokens(): string[] {
+  const raw = env("SLACK_USER_TOKENS") || env("SLACK_USER_TOKEN") || readState(TOKEN_FILE);
+  return raw
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
 const ALLOW_SEND = flag("SLACK_ALLOW_SEND");
 
 const SETUP =
-  "No Slack tokens. Create an app at https://api.slack.com/apps (use the manifest in " +
-  "the telegram-slack-mcp repo), install it to each workspace, then set SLACK_USER_TOKENS to the " +
-  "User OAuth tokens (xoxp-...), comma separated.";
+  "No Slack tokens yet. Call the `login` tool, which prompts for them directly. Slack has no " +
+  "local OAuth flow (it requires a client secret and an HTTPS redirect), so you first create an " +
+  "app at https://api.slack.com/apps from the manifest in the telegram-slack-mcp repo, install " +
+  "it to each workspace, and copy each User OAuth token (xoxp-...).";
 
 type Workspace = { name: string; client: WebClient; user: string; userId: string; url: string };
 
@@ -22,9 +29,10 @@ const userNames = new Map<string, string>();
 
 async function all(): Promise<Workspace[]> {
   if (cache) return cache;
-  if (!TOKENS.length) throw new Error(SETUP);
+  const list = tokens();
+  if (!list.length) throw new Error(SETUP);
   const out: Workspace[] = [];
-  for (const token of TOKENS) {
+  for (const token of list) {
     const client = new WebClient(token);
     const r: any = await client.auth.test();
     out.push({ name: r.team, client, user: r.user, userId: r.user_id, url: r.url });
@@ -143,7 +151,91 @@ const WORKSPACE_ARG = z
   .describe("Substring of a workspace name. Blank acts across all connected workspaces.");
 
 export function buildSlackServer(): McpServer {
-  const server = new McpServer({ name: "telegram-slack-mcp:slack", version: "0.2.2" });
+  const server = new McpServer({ name: "telegram-slack-mcp:slack", version: "0.3.0" });
+
+
+  server.registerTool(
+    "login",
+    {
+      title: "Connect Slack workspaces",
+      description:
+        "Prompt for your Slack user tokens and save them, so they do not have to live in the " +
+        "MCP config as environment variables. Slack has no local OAuth flow, so you create the " +
+        "app yourself first; this only handles handing the tokens over.",
+      inputSchema: {},
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    async () => {
+      try {
+        const asked = await server.server.elicitInput({
+          message:
+            "Paste your Slack User OAuth tokens (xoxp-...), one per workspace, comma separated. " +
+            "Get them at api.slack.com/apps: create an app from the repo manifest, Install to " +
+            "Workspace, then copy the User OAuth Token (not the bot xoxb- one).",
+          requestedSchema: {
+            type: "object",
+            properties: {
+              tokens: {
+                type: "string",
+                title: "Slack user tokens",
+                description: "xoxp-... tokens, comma separated for multiple workspaces",
+              },
+              allow_send: {
+                type: "boolean",
+                title: "Allow posting messages as you",
+                description: "Leave off to stay read-only",
+              },
+            },
+            required: ["tokens"],
+          },
+        });
+        if (asked.action !== "accept") return fail("Cancelled, nothing saved.");
+
+        const raw = String((asked.content as any)?.tokens ?? "").trim();
+        const list = raw
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean);
+        if (!list.length) return fail("No tokens provided.");
+
+        const bad = list.filter((t) => !t.startsWith("xoxp-"));
+        if (bad.length) {
+          return fail(
+            `${bad.length} token(s) do not start with xoxp-. Bot tokens (xoxb-) cannot read your ` +
+              "DMs or search; copy the User OAuth Token instead."
+          );
+        }
+
+        // Verify before saving, so a bad paste fails loudly rather than later.
+        const verified: string[] = [];
+        const teams: string[] = [];
+        for (const token of list) {
+          const r: any = await new WebClient(token).auth.test();
+          verified.push(token);
+          teams.push(`${r.team} (as ${r.user})`);
+        }
+
+        writeState(TOKEN_FILE, verified.join(","));
+        cache = null;
+        const allowSend = Boolean((asked.content as any)?.allow_send);
+        return ok({
+          connected: teams,
+          saved: true,
+          sending_enabled: ALLOW_SEND || allowSend,
+          note:
+            allowSend && !ALLOW_SEND
+              ? "Tokens saved. Sending needs SLACK_ALLOW_SEND=1 in the server config; it cannot " +
+                "be enabled from here because it guards write access."
+              : "Tokens saved to your data directory. No need to set environment variables.",
+        });
+      } catch (e: any) {
+        return fail(
+          (e?.data?.error ?? e?.message ?? String(e)) +
+            ". If your client does not support prompts, set SLACK_USER_TOKENS in the server config instead."
+        );
+      }
+    }
+  );
 
   server.registerTool(
     "whoami",

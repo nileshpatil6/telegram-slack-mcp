@@ -5,6 +5,7 @@ import { TelegramClient, Api } from "teleproto";
 import { StringSession } from "teleproto/sessions";
 import { computeCheck } from "teleproto/Password";
 import { env, flag, ok, fail, readState, writeState } from "./common.js";
+import { serveQrPage, qrAsText, loginUrl } from "./tg-login.js";
 
 const SESSION_FILE = "telegram.session";
 const API_ID = Number(env("TELEGRAM_API_ID") || env("TG_API_ID") || 0);
@@ -105,7 +106,116 @@ async function resolve(c: TelegramClient, chat: string): Promise<any> {
 }
 
 export function buildTelegramServer(): McpServer {
-  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.2.2" });
+  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.3.0" });
+
+
+  server.registerTool(
+    "login",
+    {
+      title: "Link Telegram",
+      description:
+        "Log in by scanning a QR code, the way Telegram's own desktop linking works. No phone " +
+        "number and no code to type. Use this first; fall back to login_start/login_complete " +
+        "only if the user cannot scan.",
+      inputSchema: {},
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    async () => {
+      let qr: Awaited<ReturnType<typeof serveQrPage>> | null = null;
+      try {
+        const c = await connect();
+        if (await c.isUserAuthorized()) return ok({ already_logged_in: true });
+
+        qr = await serveQrPage();
+        const elicitationId = `tg-login-${Date.now()}`;
+        let asciiQr = "";
+        let firstToken: Buffer | null = null;
+
+        const signIn = c.signInUserWithQrCode(
+          { apiId: API_ID, apiHash: API_HASH },
+          {
+            qrCode: async (token) => {
+              // Called again whenever Telegram rotates the token; the page polls.
+              firstToken = token.token;
+              await qr!.setToken(token.token);
+              if (!asciiQr) asciiQr = await qrAsText(loginUrl(token.token));
+            },
+            password: async (hint) => {
+              const asked = await server.server.elicitInput({
+                message: hint
+                  ? `This Telegram account has two-step verification. Hint: ${hint}`
+                  : "This Telegram account has two-step verification. Enter your cloud password.",
+                requestedSchema: {
+                  type: "object",
+                  properties: {
+                    password: {
+                      type: "string",
+                      title: "Telegram cloud password",
+                      description: "Your two-step verification password",
+                    },
+                  },
+                  required: ["password"],
+                },
+              });
+              if (asked.action !== "accept") throw new Error("Password entry cancelled.");
+              return String((asked.content as any)?.password ?? "");
+            },
+            onError: async (e) => {
+              // Returning false keeps the flow alive across token rotations.
+              return String(e?.message ?? e).includes("AbortError");
+            },
+          }
+        );
+
+        // Give the QR a moment to exist before pointing anyone at the page.
+        await new Promise((r) => setTimeout(r, 1200));
+
+        // Open the page for the user. Not awaited: the scan, not the dialog, is
+        // what completes the login, and older clients reject elicitation outright.
+        let elicitSupported = true;
+        const opened = server.server
+          .elicitInput({
+            mode: "url",
+            message:
+              "Scan this QR from Telegram on your phone: Settings, Devices, Link Desktop Device.",
+            elicitationId,
+            url: qr.url,
+          })
+          .catch(() => {
+            elicitSupported = false;
+            return null;
+          });
+
+        const me: any = await Promise.race([
+          signIn,
+          new Promise((_res, rej) =>
+            setTimeout(() => rej(new Error("QR login timed out after 3 minutes.")), 180_000)
+          ),
+        ]);
+
+        save(c);
+        qr.markDone();
+        void server.server.createElicitationCompletionNotifier(elicitationId)().catch(() => {});
+        void opened;
+
+        return ok({
+          logged_in: true,
+          as: entityName(me),
+          id: String(me.id),
+          method: "qr",
+          note: "Session saved. This login is permanent, no need to repeat.",
+        });
+      } catch (e: any) {
+        const msg = e?.message ?? String(e);
+        return fail(
+          msg +
+            " If scanning is not possible, use login_start with the user's phone number instead."
+        );
+      } finally {
+        qr?.close();
+      }
+    }
+  );
 
   server.registerTool(
     "login_start",
