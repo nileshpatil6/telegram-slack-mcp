@@ -45,7 +45,14 @@ large; give it ~10s before deciding it is broken.
 
 ## Releasing
 
-1. Bump `version` in `package.json`, `python/pyproject.toml`, both `plugin.json` files,
-   and the `version` passed to `new McpServer(...)`.
-2. `npm publish` and `python -m build && twine upload python/dist/*`.
-3. Tag the release.
+npm publishes through OIDC trusted publishing (`.github/workflows/publish.yml`), so no
+token is stored in the repo or in CI secrets.
+
+1. Bump `version` in `package.json`, `server.json`, `python/pyproject.toml`, both
+   `plugin.json` files, and the `version` passed to `new McpServer(...)`.
+2. Commit, then push a tag: `git tag v0.3.0 && git push origin v0.3.0`. The workflow
+   builds, checks that both servers still register their tools, and publishes to npm.
+3. Python is still manual: `cd python && python -m build && twine upload dist/*`.
+4. Update the registry entry: `mcp-publisher login github && mcp-publisher publish`.
+   Do this only after npm has the version `server.json` claims, or the registry will
+   advertise a package that does not exist.

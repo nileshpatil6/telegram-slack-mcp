@@ -1,0 +1,54 @@
+name: publish
+
+# Publishes to npm via OIDC trusted publishing: no token is stored anywhere.
+# Configure the trusted publisher once at
+# npmjs.com -> telegram-slack-mcp -> Settings -> Trusted publisher
+#   organization/user: nileshpatil6
+#   repository:        telegram-slack-mcp
+#   workflow:          publish.yml
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required: lets the runner mint the OIDC token npm verifies.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Trusted publishing needs Node >= 22.14.0 and npm >= 11.5.1.
+          node-version: "22.14.0"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Use an npm new enough for trusted publishing
+        run: npm install -g npm@latest
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Verify the servers still register their tools
+        run: |
+          for s in telegram slack; do
+            printf '%s\n' \
+              '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+              '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+              '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | timeout 60 node dist/cli.js "$s" > "out-$s.json" || true
+            count=$(grep -o '"name":"[a-z_]*"' "out-$s.json" | sort -u | wc -l)
+            echo "$s registered $count tools"
+            if [ "$count" -lt 8 ]; then
+              echo "::error::$s registered $count tools, expected at least 8"
+              cat "out-$s.json"
+              exit 1
+            fi
+          done
+
+      - run: npm publish --access public
