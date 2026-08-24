@@ -23,8 +23,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # Trusted publishing needs Node >= 22.14.0 and npm >= 11.5.1.
-          node-version: "22.14.0"
+          # Trusted publishing needs npm >= 11.5.1, and current npm requires
+          # node ^22.22.2 || ^24.15.0 || >=26, so track Node 24 LTS.
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
       - name: Use an npm new enough for trusted publishing
