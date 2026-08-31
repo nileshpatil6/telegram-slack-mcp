@@ -99,9 +99,10 @@ claude mcp add slack    -- uvx telegram-slack-mcp slack
 
 3. Ask Claude: **"log into telegram"**
 
-   It calls `login`, which opens a page with a QR code. Scan it from Telegram on your
-   phone — **Settings → Devices → Link Desktop Device** — and you're in. No phone number,
-   no SMS code, no 2FA password typed anywhere. On the same machine you can click
+   It calls `login`, which returns a link to a page showing a QR code (and the code as
+   text, if your client renders it). Scan it from Telegram on your phone — **Settings →
+   Devices → Link Desktop Device** — then it calls `login_status` to confirm. No phone
+   number, no SMS code, no 2FA password typed anywhere. On the same machine you can click
    "open in Telegram Desktop" instead of scanning.
 
    The session is saved to `~/.chat-mcp` and persists; you do this once.
@@ -142,6 +143,7 @@ server. This project has no server, so it asks for the token instead.
 | tool | what it does |
 |---|---|
 | `login()` | **scan a QR to link your account** — no phone number or code |
+| `login_status()` | check whether the QR has been scanned yet |
 | `login_start(phone)` | fallback: send yourself a login code |
 | `login_complete(code, password?)` | finish login, save the session |
 | `whoami()` | which account is connected |

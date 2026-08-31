@@ -34,8 +34,9 @@ async function authed(): Promise<TelegramClient> {
   const c = await connect();
   if (!(await c.isUserAuthorized())) {
     throw new Error(
-      "Telegram not logged in yet. Call login_start with the user's phone number, " +
-        "then login_complete with the code Telegram sends."
+      "Telegram not logged in yet. Call the `login` tool, which shows a QR code the user " +
+        "scans from Telegram: Settings, Devices, Link Desktop Device. Only if they cannot " +
+        "scan, fall back to login_start with their phone number then login_complete."
     );
   }
   return c;
@@ -137,8 +138,104 @@ function pickSize(m: any, maxBytes: number): any | undefined {
   return fits[0] ?? usable.slice().sort((a, b) => a.size - b.size)[0];
 }
 
+/**
+ * A QR login in progress. The scan, not any dialog, is what completes it, so the
+ * flow runs in the background and `login_status` reports on it. Nothing here
+ * depends on the client supporting elicitation: `login` hands back a URL and an
+ * ASCII code directly, which works in every MCP client.
+ */
+type QrFlow = {
+  qr: Awaited<ReturnType<typeof serveQrPage>>;
+  ascii: string;
+  settled: boolean;
+  user?: any;
+  error?: string;
+};
+
+let flow: QrFlow | null = null;
+
+function flowInstructions() {
+  return {
+    open_this: flow?.qr.url,
+    qr_code: flow?.ascii,
+    instructions:
+      "Show the user the URL above (or the QR text). They scan it in Telegram: " +
+      "Settings, then Devices, then Link Desktop Device. Then call login_status.",
+    expires: "The code rotates automatically; the page always shows a current one.",
+  };
+}
+
+async function startQrFlow(server: McpServer): Promise<void> {
+  const c = await connect();
+  const qr = await serveQrPage();
+  const state: QrFlow = { qr, ascii: "", settled: false };
+  flow = state;
+
+  const signIn = c.signInUserWithQrCode(
+    { apiId: API_ID, apiHash: API_HASH },
+    {
+      qrCode: async (token) => {
+        // Telegram rotates the token; the page refreshes itself to match.
+        await qr.setToken(token.token);
+        if (!state.ascii) state.ascii = await qrAsText(loginUrl(token.token));
+      },
+      password: async (hint) => {
+        const asked = await server.server.elicitInput({
+          message: hint
+            ? `This Telegram account has two-step verification. Hint: ${hint}`
+            : "This Telegram account has two-step verification. Enter your cloud password.",
+          requestedSchema: {
+            type: "object",
+            properties: {
+              password: {
+                type: "string",
+                title: "Telegram cloud password",
+                description: "Your two-step verification password",
+              },
+            },
+            required: ["password"],
+          },
+        });
+        if (asked.action !== "accept") throw new Error("Password entry cancelled.");
+        return String((asked.content as any)?.password ?? "");
+      },
+      onError: async (e) => String(e?.message ?? e).includes("AbortError"),
+    }
+  );
+
+  signIn
+    .then((me: any) => {
+      save(c);
+      state.user = me;
+      state.settled = true;
+      qr.markDone();
+      setTimeout(() => qr.close(), 30_000);
+    })
+    .catch((e: any) => {
+      state.error = e?.message ?? String(e);
+      qr.close();
+    });
+
+  // Offer the page through the client too, when it supports that. Best effort:
+  // the URL is already in the tool result, so a client that ignores this loses
+  // nothing.
+  server.server
+    .elicitInput({
+      mode: "url",
+      message: "Scan this QR from Telegram: Settings, Devices, Link Desktop Device.",
+      elicitationId: `tg-login-${Date.now()}`,
+      url: qr.url,
+    })
+    .catch(() => undefined);
+
+  // Let the first token arrive so the URL and ASCII code are populated.
+  for (let i = 0; i < 40 && !state.ascii && !state.error; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
+
 export function buildTelegramServer(): McpServer {
-  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.4.0" });
+  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.4.1" });
 
 
   server.registerTool(
@@ -146,90 +243,53 @@ export function buildTelegramServer(): McpServer {
     {
       title: "Link Telegram",
       description:
-        "Log in by scanning a QR code, the way Telegram's own desktop linking works. No phone " +
-        "number and no code to type. Use this first; fall back to login_start/login_complete " +
-        "only if the user cannot scan.",
+        "Start QR login, the way Telegram's own desktop linking works. Returns a URL to open " +
+        "plus the code as text; the user scans it from Telegram (Settings, Devices, Link " +
+        "Desktop Device), then you call login_status. No phone number and no code to type.",
       inputSchema: {},
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
     async () => {
-      let qr: Awaited<ReturnType<typeof serveQrPage>> | null = null;
       try {
         const c = await connect();
         if (await c.isUserAuthorized()) return ok({ already_logged_in: true });
 
-        qr = await serveQrPage();
-        const elicitationId = `tg-login-${Date.now()}`;
-        let asciiQr = "";
-        let firstToken: Buffer | null = null;
+        // An unfinished attempt is reusable: the page reflects the rotating token.
+        if (flow && !flow.settled) {
+          return ok({ ...flowInstructions(), note: "A login is already waiting for a scan." });
+        }
 
-        const signIn = c.signInUserWithQrCode(
-          { apiId: API_ID, apiHash: API_HASH },
-          {
-            qrCode: async (token) => {
-              // Called again whenever Telegram rotates the token; the page polls.
-              firstToken = token.token;
-              await qr!.setToken(token.token);
-              if (!asciiQr) asciiQr = await qrAsText(loginUrl(token.token));
-            },
-            password: async (hint) => {
-              const asked = await server.server.elicitInput({
-                message: hint
-                  ? `This Telegram account has two-step verification. Hint: ${hint}`
-                  : "This Telegram account has two-step verification. Enter your cloud password.",
-                requestedSchema: {
-                  type: "object",
-                  properties: {
-                    password: {
-                      type: "string",
-                      title: "Telegram cloud password",
-                      description: "Your two-step verification password",
-                    },
-                  },
-                  required: ["password"],
-                },
-              });
-              if (asked.action !== "accept") throw new Error("Password entry cancelled.");
-              return String((asked.content as any)?.password ?? "");
-            },
-            onError: async (e) => {
-              // Returning false keeps the flow alive across token rotations.
-              return String(e?.message ?? e).includes("AbortError");
-            },
-          }
-        );
+        await startQrFlow(server);
+        return ok(flowInstructions());
+      } catch (e: any) {
+        return fail(e?.message ?? String(e));
+      }
+    }
+  );
 
-        // Give the QR a moment to exist before pointing anyone at the page.
-        await new Promise((r) => setTimeout(r, 1200));
-
-        // Open the page for the user. Not awaited: the scan, not the dialog, is
-        // what completes the login, and older clients reject elicitation outright.
-        let elicitSupported = true;
-        const opened = server.server
-          .elicitInput({
-            mode: "url",
-            message:
-              "Scan this QR from Telegram on your phone: Settings, Devices, Link Desktop Device.",
-            elicitationId,
-            url: qr.url,
-          })
-          .catch(() => {
-            elicitSupported = false;
-            return null;
-          });
-
-        const me: any = await Promise.race([
-          signIn,
-          new Promise((_res, rej) =>
-            setTimeout(() => rej(new Error("QR login timed out after 3 minutes.")), 180_000)
-          ),
-        ]);
-
-        save(c);
-        qr.markDone();
-        void server.server.createElicitationCompletionNotifier(elicitationId)().catch(() => {});
-        void opened;
-
+  server.registerTool(
+    "login_status",
+    {
+      title: "Check Telegram login",
+      description:
+        "Check whether the QR from `login` has been scanned yet. Call this after telling the " +
+        "user to scan; if it reports waiting, give them a moment and check again.",
+      inputSchema: {},
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async () => {
+      try {
+        if (!flow) return fail("No login in progress. Call `login` first.");
+        if (flow.error) {
+          const msg = flow.error;
+          flow = null;
+          return fail(msg + " Call `login` to start over.");
+        }
+        if (!flow.settled) {
+          return ok({ ...flowInstructions(), status: "waiting for the scan" });
+        }
+        const me: any = flow.user;
+        flow = null;
         return ok({
           logged_in: true,
           as: entityName(me),
@@ -238,13 +298,7 @@ export function buildTelegramServer(): McpServer {
           note: "Session saved. This login is permanent, no need to repeat.",
         });
       } catch (e: any) {
-        const msg = e?.message ?? String(e);
-        return fail(
-          msg +
-            " If scanning is not possible, use login_start with the user's phone number instead."
-        );
-      } finally {
-        qr?.close();
+        return fail(e?.message ?? String(e));
       }
     }
   );
