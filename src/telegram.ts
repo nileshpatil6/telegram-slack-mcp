@@ -4,7 +4,7 @@ import { z } from "zod";
 import { TelegramClient, Api } from "teleproto";
 import { StringSession } from "teleproto/sessions";
 import { computeCheck } from "teleproto/Password";
-import { env, flag, ok, fail, readState, writeState } from "./common.js";
+import { env, flag, ok, okImage, fail, readState, writeState } from "./common.js";
 import { serveQrPage, qrAsText, loginUrl } from "./tg-login.js";
 
 const SESSION_FILE = "telegram.session";
@@ -82,9 +82,9 @@ async function fmtMessage(m: any) {
     text: m.message || "",
   };
   if (m.media) {
-    const kind = m.media.className || "Media";
+    const { kind, mime } = mediaInfo(m);
+    out.media = { kind, mime, hint: "call read_media with this message id to view it" };
     if (!m.message) out.text = `[${kind}]`;
-    else out.media = kind;
   }
   if (m.replyTo?.replyToMsgId) out.reply_to = m.replyTo.replyToMsgId;
   return out;
@@ -105,8 +105,40 @@ async function resolve(c: TelegramClient, chat: string): Promise<any> {
   throw new Error(`No chat matching ${JSON.stringify(chat)}`);
 }
 
+/** What kind of media a message carries, and the mime type to report for it. */
+function mediaInfo(m: any): { kind: string; mime: string } {
+  const media = m?.media;
+  if (!media) return { kind: "none", mime: "" };
+  if (media.className === "MessageMediaPhoto") return { kind: "photo", mime: "image/jpeg" };
+  if (media.className === "MessageMediaDocument") {
+    const doc = media.document;
+    const mime = doc?.mimeType || "application/octet-stream";
+    const isSticker = (doc?.attributes ?? []).some(
+      (a: any) => a.className === "DocumentAttributeSticker"
+    );
+    return { kind: isSticker ? "sticker" : mime.startsWith("image/") ? "image" : "document", mime };
+  }
+  return { kind: media.className || "media", mime: "" };
+}
+
+/**
+ * Telegram stores several sizes per photo. Pick the largest that fits the budget
+ * rather than downloading the original and shrinking it, which would need an
+ * image library and a much larger transfer.
+ */
+function pickSize(m: any, maxBytes: number): any | undefined {
+  const sizes: any[] =
+    m?.media?.photo?.sizes ?? m?.media?.document?.thumbs ?? [];
+  const usable = sizes.filter(
+    (x) => x.className === "PhotoSize" && typeof x.size === "number"
+  );
+  if (!usable.length) return undefined;
+  const fits = usable.filter((x) => x.size <= maxBytes).sort((a, b) => b.size - a.size);
+  return fits[0] ?? usable.slice().sort((a, b) => a.size - b.size)[0];
+}
+
 export function buildTelegramServer(): McpServer {
-  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.3.0" });
+  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.4.0" });
 
 
   server.registerTool(
@@ -459,6 +491,78 @@ export function buildTelegramServer(): McpServer {
           if (out.length >= limit) break;
         }
         return ok(out);
+      } catch (e: any) {
+        return fail(e?.message ?? String(e));
+      }
+    }
+  );
+
+
+  server.registerTool(
+    "read_media",
+    {
+      title: "View a photo or file from a chat",
+      description:
+        "Download the media attached to one message and return it, so images can actually be " +
+        "seen rather than just named. Use the message id from read_chat or search_messages. " +
+        "Photos are fetched at the largest size that fits within max_kb.",
+      inputSchema: {
+        chat: z.string().describe("@username, numeric id, or part of the chat name"),
+        message_id: z.number().int().describe("Message id, as returned by read_chat"),
+        max_kb: z
+          .number()
+          .int()
+          .min(16)
+          .max(4096)
+          .default(800)
+          .describe("Size budget. Bigger images cost proportionally more context."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ chat, message_id, max_kb }) => {
+      try {
+        const c = await authed();
+        const e = await resolve(c, chat);
+        const found: any[] = await c.getMessages(e, { ids: [message_id] });
+        const m: any = found?.[0];
+        if (!m) return fail(`No message with id ${message_id} in that chat.`);
+        if (!m.media) return fail(`Message ${message_id} has no media attached.`);
+
+        const maxBytes = max_kb * 1024;
+        const { kind, mime } = mediaInfo(m);
+        const thumb = pickSize(m, maxBytes);
+
+        const buf = await c.downloadMedia(m, thumb ? { thumb } : {});
+        if (!buf || typeof buf === "string" || !buf.length) {
+          return fail("Telegram returned no bytes for that media.");
+        }
+        if (buf.length > maxBytes) {
+          return fail(
+            `That media is ${Math.round(buf.length / 1024)}KB, over the ${max_kb}KB budget. ` +
+              "Raise max_kb if you want it anyway."
+          );
+        }
+
+        const meta = {
+          chat: entityName(e),
+          message_id,
+          kind,
+          mime,
+          bytes: buf.length,
+          caption: m.message || "",
+          date: iso(m.date),
+        };
+
+        if (mime.startsWith("image/")) {
+          return okImage(buf.toString("base64"), mime, meta);
+        }
+        if (mime.startsWith("text/") || mime === "application/json") {
+          return ok({ ...meta, text: buf.toString("utf8").slice(0, 20000) });
+        }
+        return fail(
+          `That is a ${mime} file (${Math.round(buf.length / 1024)}KB), which cannot be shown ` +
+            "inline. Only images and text files can be read directly."
+        );
       } catch (e: any) {
         return fail(e?.message ?? String(e));
       }

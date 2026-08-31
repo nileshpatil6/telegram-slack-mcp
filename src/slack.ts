@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { WebClient } from "@slack/web-api";
-import { env, flag, ok, fail, readState, writeState } from "./common.js";
+import { env, flag, ok, okImage, fail, readState, writeState } from "./common.js";
 
 const TOKEN_FILE = "slack.tokens";
 
@@ -78,7 +78,15 @@ async function fmtMessage(w: Workspace, m: any) {
     text: m.text || "",
   };
   if (m.thread_ts && m.reply_count) out.thread_replies = m.reply_count;
-  if (m.files?.length) out.files = m.files.map((f: any) => f.name);
+  if (m.files?.length) {
+    out.files = m.files.map((f: any) => ({
+      id: f.id,
+      name: f.name,
+      mime: f.mimetype,
+      bytes: f.size,
+      hint: "call read_file with this id to view it",
+    }));
+  }
   return out;
 }
 
@@ -151,7 +159,7 @@ const WORKSPACE_ARG = z
   .describe("Substring of a workspace name. Blank acts across all connected workspaces.");
 
 export function buildSlackServer(): McpServer {
-  const server = new McpServer({ name: "telegram-slack-mcp:slack", version: "0.3.0" });
+  const server = new McpServer({ name: "telegram-slack-mcp:slack", version: "0.4.0" });
 
 
   server.registerTool(
@@ -461,6 +469,93 @@ export function buildSlackServer(): McpServer {
       } catch (e: any) {
         return fail(e?.message ?? String(e));
       }
+    }
+  );
+
+
+  server.registerTool(
+    "read_file",
+    {
+      title: "View a file shared in Slack",
+      description:
+        "Download a file shared in Slack and return it, so images can actually be seen rather " +
+        "than just named. Use the file id from read_channel or read_thread.",
+      inputSchema: {
+        file_id: z.string().describe("Slack file id, as returned by read_channel"),
+        workspace: WORKSPACE_ARG,
+        max_kb: z
+          .number()
+          .int()
+          .min(16)
+          .max(4096)
+          .default(800)
+          .describe("Size budget. Bigger images cost proportionally more context."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ file_id, workspace, max_kb }) => {
+      const maxBytes = max_kb * 1024;
+      const errors: string[] = [];
+      for (const w of await pick(workspace)) {
+        let info: any;
+        try {
+          info = await w.client.files.info({ file: file_id });
+        } catch (e: any) {
+          errors.push(`${w.name}: ${e?.data?.error ?? e?.message ?? String(e)}`);
+          continue;
+        }
+        const f = info?.file;
+        if (!f?.url_private) {
+          errors.push(`${w.name}: file has no downloadable URL`);
+          continue;
+        }
+        const mime: string = f.mimetype || "application/octet-stream";
+        if (typeof f.size === "number" && f.size > maxBytes) {
+          return fail(
+            `That file is ${Math.round(f.size / 1024)}KB, over the ${max_kb}KB budget. ` +
+              "Raise max_kb if you want it anyway."
+          );
+        }
+
+        // url_private is not public: it needs the same user token as the API call.
+        const res = await fetch(f.url_private, {
+          headers: { Authorization: `Bearer ${(w.client as any).token}` },
+        });
+        if (!res.ok) {
+          errors.push(`${w.name}: download failed with HTTP ${res.status}`);
+          continue;
+        }
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (buf.length > maxBytes) {
+          return fail(
+            `That file is ${Math.round(buf.length / 1024)}KB, over the ${max_kb}KB budget.`
+          );
+        }
+
+        const meta = {
+          workspace: w.name,
+          file_id,
+          name: f.name,
+          mime,
+          bytes: buf.length,
+          title: f.title || "",
+          shared_in: (f.channels ?? []).concat(f.groups ?? [], f.ims ?? []),
+        };
+
+        if (mime.startsWith("image/")) {
+          return okImage(buf.toString("base64"), mime, meta);
+        }
+        if (mime.startsWith("text/") || mime === "application/json" || f.mode === "snippet") {
+          return ok({ ...meta, text: buf.toString("utf8").slice(0, 20000) });
+        }
+        return fail(
+          `That is a ${mime} file (${Math.round(buf.length / 1024)}KB), which cannot be shown ` +
+            "inline. Only images and text files can be read directly."
+        );
+      }
+      return fail(
+        `File ${file_id} was not readable in any connected workspace. ` + errors.join("; ")
+      );
     }
   );
 

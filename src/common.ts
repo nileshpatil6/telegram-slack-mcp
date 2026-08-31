@@ -37,6 +37,16 @@ export function ok(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
 }
 
+/** An image plus a JSON metadata block, so the model both sees it and knows its source. */
+export function okImage(base64: string, mimeType: string, meta: unknown) {
+  return {
+    content: [
+      { type: "image" as const, data: base64, mimeType },
+      { type: "text" as const, text: JSON.stringify(meta, null, 2) },
+    ],
+  };
+}
+
 export function fail(message: string) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify({ error: message }, null, 2) }],

@@ -23,6 +23,7 @@ Then just talk:
 > *"what's unread on telegram from actual people?"*
 > *"read my last 30 messages with Priya and draft a reply"*
 > *"search all my slack workspaces for the deploy postmortem"*
+> *"what's in the screenshot Priya sent me?"*
 
 ---
 
@@ -148,6 +149,7 @@ server. This project has no server, so it asks for the token instead.
 | `read_chat(chat, limit, before_id)` | messages of one chat — `chat` takes @username, id, or part of a name |
 | `search_messages(query, chat?, limit)` | full-text search, one chat or all |
 | `unread_summary(limit, per_chat, kind)` | catch-up view; `kind: "dm"` skips the channel noise |
+| `read_media(chat, message_id, max_kb)` | **view a photo or file** — returns the actual image, not just its type |
 | `send_message(chat, text, reply_to?)` | reply as you — **off unless `TELEGRAM_ALLOW_SEND=1`** |
 
 ### Slack
@@ -162,6 +164,7 @@ server. This project has no server, so it asks for the token instead.
 | `read_thread(channel, thread_ts, limit, workspace)` | replies inside a thread |
 | `search_messages(query, limit, workspace)` | supports `in:#chan`, `from:@user` |
 | `unread_summary(limit, per_chat, workspace)` | what's unread everywhere |
+| `read_file(file_id, workspace, max_kb)` | **view a file shared in Slack** — returns the actual image |
 | `send_message(channel, text, workspace, thread_ts?)` | post as you — **off unless `SLACK_ALLOW_SEND=1`** |
 
 Every Slack tool takes an optional **`workspace`** (any substring of the name). Leave it
