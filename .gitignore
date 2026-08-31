@@ -8,3 +8,5 @@ __pycache__/
 *.pyc
 *.egg-info/
 build/
+qr-login-once.js
+qr.log

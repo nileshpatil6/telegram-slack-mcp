@@ -235,7 +235,7 @@ async function startQrFlow(server: McpServer): Promise<void> {
 }
 
 export function buildTelegramServer(): McpServer {
-  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.4.1" });
+  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.5.0" });
 
 
   server.registerTool(

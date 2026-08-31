@@ -5,6 +5,7 @@ const USAGE = `telegram-slack-mcp - MCP servers for your personal Telegram and S
 Usage:
   telegram-slack-mcp telegram   Run the Telegram MCP server on stdio
   telegram-slack-mcp slack      Run the Slack MCP server on stdio
+  telegram-slack-mcp login      Link your Telegram account by scanning a QR code
 
 Register with Claude Code:
   claude mcp add telegram -- npx -y telegram-slack-mcp telegram
@@ -34,6 +35,12 @@ async function main() {
     case "slack": {
       const { runSlack } = await import("./slack.js");
       await runSlack();
+      break;
+    }
+    case "login": {
+      // Terminal login, for people who would rather not drive it through a client.
+      const { loginFromTerminal } = await import("./tg-login-cli.js");
+      await loginFromTerminal();
       break;
     }
     case "-h":

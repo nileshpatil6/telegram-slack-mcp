@@ -97,7 +97,22 @@ claude mcp add slack    -- uvx telegram-slack-mcp slack
    claude mcp add telegram      -e TELEGRAM_API_ID=1234567      -e TELEGRAM_API_HASH=your_hash      -- npx -y telegram-slack-mcp telegram
    ```
 
-3. Ask Claude: **"log into telegram"**
+3. Link your account. Either ask Claude — **"log into telegram"** — or do it yourself in a
+   terminal, which needs no MCP client at all:
+
+   ```bash
+   TELEGRAM_API_ID=1234567 TELEGRAM_API_HASH=your_hash npx -y telegram-slack-mcp login
+   ```
+
+   ```powershell
+   # PowerShell
+   $env:TELEGRAM_API_ID="1234567"; $env:TELEGRAM_API_HASH="your_hash"
+   npx -y telegram-slack-mcp login
+   ```
+
+   Either way you scan a QR and the session is saved to `~/.chat-mcp`.
+
+   Through Claude:
 
    It calls `login`, which returns a link to a page showing a QR code (and the code as
    text, if your client renders it). Scan it from Telegram on your phone — **Settings →
