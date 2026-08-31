@@ -1,7 +1,7 @@
 {
   "name": "telegram",
   "description": "Read and reply to your personal Telegram chats from Claude",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "author": { "name": "nileshpatil6", "url": "https://github.com/nileshpatil6" },
   "homepage": "https://github.com/nileshpatil6/telegram-slack-mcp",
   "repository": "https://github.com/nileshpatil6/telegram-slack-mcp",

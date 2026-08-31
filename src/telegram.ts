@@ -19,10 +19,9 @@ const SETUP =
 let client: TelegramClient | null = null;
 let pending: { phone: string; hash: string } | null = null;
 
-async function connect(): Promise<TelegramClient> {
-  if (client) return client;
+async function connectWith(session: string): Promise<TelegramClient> {
   if (!API_ID || !API_HASH) throw new Error(SETUP);
-  const c = new TelegramClient(new StringSession(readState(SESSION_FILE)), API_ID, API_HASH, {
+  const c = new TelegramClient(new StringSession(session), API_ID, API_HASH, {
     connectionRetries: 3,
   });
   await c.connect();
@@ -30,8 +29,28 @@ async function connect(): Promise<TelegramClient> {
   return c;
 }
 
+async function connect(): Promise<TelegramClient> {
+  if (client) return client;
+  return connectWith(readState(SESSION_FILE));
+}
+
 async function authed(): Promise<TelegramClient> {
-  const c = await connect();
+  let c = await connect();
+  if (!(await c.isUserAuthorized())) {
+    // The session may have been written after this process connected, by the
+    // `login` CLI or another client. Re-read it before giving up.
+    const saved = readState(SESSION_FILE);
+    if (saved && String(c.session.save()) !== saved) {
+      try {
+        await c.disconnect();
+      } catch {
+        /* already gone */
+      }
+      client = null;
+      c = await connectWith(saved);
+      if (await c.isUserAuthorized()) return c;
+    }
+  }
   if (!(await c.isUserAuthorized())) {
     throw new Error(
       "Telegram not logged in yet. Call the `login` tool, which shows a QR code the user " +
@@ -235,7 +254,7 @@ async function startQrFlow(server: McpServer): Promise<void> {
 }
 
 export function buildTelegramServer(): McpServer {
-  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.5.0" });
+  const server = new McpServer({ name: "telegram-slack-mcp:telegram", version: "0.5.1" });
 
 
   server.registerTool(
